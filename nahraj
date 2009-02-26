@@ -76,8 +76,8 @@ echo "Vypinam linuxdcpp..."
 killall linuxdcpp
 
 declare -a program
-program[1]=233.10.47.71
-program[2]=233.10.47.72
+program[1]=233.10.47.90
+program[2]=233.10.47.91
 program[3]=233.10.47.70
 program[4]=233.10.47.14
 program[5]=233.10.47.11
