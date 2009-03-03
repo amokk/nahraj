@@ -79,7 +79,7 @@ declare -a program
 program[1]=233.10.47.90
 program[2]=233.10.47.91
 program[3]=233.10.47.70
-program[4]=233.10.47.14
+program[4]=233.10.47.13
 program[5]=233.10.47.11
 program[6]=233.10.47.80
 program[7]=233.10.47.66
