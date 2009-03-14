@@ -19,6 +19,7 @@
 #   14-StudentTV2
 #   15-MTV
 #   16-CT4
+#   17-Barrandov
 #######################################
 
 PATH=/bin:/usr/bin:/sbin:/usr/sbin
@@ -48,6 +49,7 @@ if [ $# -ne 2 ]; then
     echo "      14-StudentTV-2"
     echo "      15-MTV"
     echo "      16-CT4"
+    echo "      17-Barrandov"
 	echo "nahraj <cislo_programu> <cas_v_minutach>"
 	exit 0
 fi
@@ -92,6 +94,7 @@ program[13]=224.1.2.3
 program[14]=224.10.20.30
 program[15]=233.10.47.68
 program[16]=233.10.47.84
+program[17]=233.11.36.102
 
 echo "$DATUM-$1"
 OUTPUTFILE="$OUT/$DATUM-$1.mpg"
