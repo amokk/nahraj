@@ -25,9 +25,12 @@
 PATH=/bin:/usr/bin:/sbin:/usr/sbin
 DATUM=`date +%Y%m%d-%H%M`
 OUT=/mnt/hda7/video_nahravky
+FTPSHUT="sudo /usr/sbin/ftpshut"
 SERVERON=`date --date='+'$2' min' +%H:%M`
 SHUTOFF=`date --date='+'$2' min' +%s`
 SHUT="/etc/shutmsg"
+RENICE="sudo /usr/bin/renice"
+IONICE="sudo /usr/bin/ionice"
 
 
 if [ $# -ne 2 ]; then
@@ -61,14 +64,14 @@ if [ -e "$SHUT"  ] ; then                   # ak sa uz nieco nahrava potom
     if [ $SHUTOFFOLD -gt $SHUTOFF  ]; then  # ak je to neskor ako aktualna nahravka potom
         SHUTMD5="nezmaz shutmsg"            # ftpshut -R na konci suboru sa nema spustit
     else                                    # inak
-        ftpshut -R;                         # zmaz stary subor .etc.shutmsg
+        $FTPSHUT -R;                         # zmaz stary subor .etc.shutmsg
         sleep 1; 
-        ftpshut now "ftp.bude.zapnute.o.$SERVERON.(momentalne.sa.nahrava.nejaky.program)
+        $FTPSHUT now "ftp.bude.zapnute.o.$SERVERON.(momentalne.sa.nahrava.nejaky.program)
 $SHUTOFF";                                  # vytvor novy subor .etc.shutmsg  s aktualnym casom konca nahravky
         SHUTMD5=`md5sum $SHUT`;
     fi
 else                                        # ak sa este nic nenahrava 
-    ftpshut now "ftp.bude.zapnute.o.$SERVERON.(momentalne.sa.nahrava.nejaky.program)
+    $FTPSHUT now "ftp.bude.zapnute.o.$SERVERON.(momentalne.sa.nahrava.nejaky.program)
 $SHUTOFF";                                  # vyvor subor .etc.shutmsg
     SHUTMD5=`md5sum $SHUT`;                 # zapamataj si jeho hash
 fi
@@ -102,12 +105,15 @@ OUTPUTFILE="$OUT/$DATUM-$1.mpg"
 #ionice -c2 -n0 nice -n -20 vlc --udp-caching 20000 --intf dummy udp://@${program[$1]}:1234 \
 #    --sout '#duplicate{dst=standard{access=file,mux=ts,dst='$OUTPUTFILE'},dst=standard{access=udp{caching=20000},mux=ts,dst=192.168.0.4:1235} }' &
 
-ionice -c2 -n0 nice -n -20 vlc --udp-caching 20000 --intf dummy rtp://@${program[$1]}:1234 \
+
+vlc --udp-caching 20000 --intf dummy rtp://@${program[$1]}:1234 \
     --sout '#duplicate{dst=standard{access=file,mux=ps,dst='$OUTPUTFILE'}}' &
 
 sleep 2
 
 VLCPID=$!
+$RENICE -20 -p $VLCPID
+$IONICE -n0 -c1 -p $VLCPID
 
 echo $VLCPID
 sleep $2'm'
@@ -118,7 +124,7 @@ kill -HUP $VLCPID
 #zapnut ftp server
 POM=`md5sum $SHUT`                  # zisti aktualny hash suboru .etc.shutmsg
 if [ "$POM" = "$SHUTMD5" ]; then    # ak ho ziadna dalsia nahravka nezmenila potom
-    ftpshut -R                      # zapni ftp
+    $FTPSHUT -R                      # zapni ftp
 fi
 
 exit 0
