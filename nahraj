@@ -32,29 +32,33 @@ SHUT="/etc/shutmsg"
 RENICE="sudo /usr/bin/renice"
 IONICE="sudo /usr/bin/ionice"
 
+function showHelp {
+cat<<EOF 
+programy:
+    1-stv1
+    2-stv2
+    3-markiza
+    4-joj
+    5-TA3
+    6-prima
+    7-nautik
+    8-radio_fm
+    9-CT2
+    10-Fun Radio
+    11-NOVA
+    12-CT1
+    13-StudentTV
+    14-StudentTV-2
+    15-MTV
+    16-CT4
+    17-Barrandov
+nahraj <cislo_programu> <cas_v_minutach>
+EOF
+}
 
 if [ $# -ne 2 ]; then
-	echo "prilis malo/vela argumentov"
-	echo "programy:	"
-    echo "      1-stv1"
-	echo "      2-stv2"
-	echo "      3-markiza"
-	echo "      4-joj"
-	echo "      5-TA3"
-	echo "      6-prima"
-	echo "      7-nautik"
-	echo "      8-radio_fm"
-    echo "      9-CT2"
-    echo "      10-Fun Radio"
-    echo "      11-NOVA"
-    echo "      12-CT1"
-    echo "      13-StudentTV"
-    echo "      14-StudentTV-2"
-    echo "      15-MTV"
-    echo "      16-CT4"
-    echo "      17-Barrandov"
-	echo "nahraj <cislo_programu> <cas_v_minutach>"
-	exit 0
+    showHelp
+    exit 0
 fi
 
 #vypnut ftp server
