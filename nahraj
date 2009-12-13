@@ -20,12 +20,11 @@
 #   15-MTV
 #   16-CT4
 #   17-Barrandov
-#   18-JOJ+
 #######################################
 
 PATH=/bin:/usr/bin:/sbin:/usr/sbin
 DATUM=`date +%Y%m%d-%H%M`
-OUT=/mnt/data2/video_nahravky
+OUT=/mnt/hda7/video_nahravky
 FTPSHUT="sudo /usr/sbin/ftpshut"
 SERVERON=`date --date='+'$2' min' +%H:%M`
 SHUTOFF=`date --date='+'$2' min' +%s`
@@ -33,71 +32,104 @@ SHUT="/etc/shutmsg"
 RENICE="sudo /usr/bin/renice"
 IONICE="sudo /usr/bin/ionice"
 
+function showHelp {
+cat<<EOF 
+programy:
+    1-stv1
+    2-stv2
+    3-markiza
+    4-joj
+    5-TA3
+    6-prima
+    7-nautik
+    8-radio_fm
+    9-CT2
+    10-Fun Radio
+    11-NOVA
+    12-CT1
+    13-StudentTV
+    14-StudentTV-2
+    15-MTV
+    16-CT4
+    17-Barrandov
+nahraj <cislo_programu> <cas_v_minutach>
+EOF
+}
 
 if [ $# -ne 2 ]; then
-	echo "prilis malo/vela argumentov"
-	echo "programy:	"
-    echo "      1-stv1"
-	echo "      2-stv2"
-	echo "      3-markiza"
-	echo "      4-joj"
-	echo "      5-TA3"
-	echo "      6-prima"
-	echo "      7-nautik"
-	echo "      8-radio_fm"
-    echo "      9-CT2"
-    echo "      10-Fun Radio"
-    echo "      11-NOVA"
-    echo "      12-CT1"
-    echo "      13-StudentTV"
-    echo "      14-StudentTV-2"
-    echo "      15-MTV"
-    echo "      16-CT4"
-    echo "      17-Barrandov"
-    echo "	18-JOJ+"
-	echo "nahraj <cislo_programu> <cas_v_minutach>"
-	exit 0
+    showHelp
+    exit 0
 fi
 
+#vypnut ftp server
+echo "Vypinam ftp server..."
+if [ -e "$SHUT"  ] ; then                   # ak sa uz nieco nahrava potom
+    SHUTOFFOLD=`tail -n 1 $SHUT`;           # zisti cas kedy ma skoncit uz nahravany program
+    if [ $SHUTOFFOLD -gt $SHUTOFF  ]; then  # ak je to neskor ako aktualna nahravka potom
+        SHUTMD5="nezmaz shutmsg"            # ftpshut -R na konci suboru sa nema spustit
+    else                                    # inak
+        $FTPSHUT -R;                         # zmaz stary subor .etc.shutmsg
+        sleep 1; 
+        $FTPSHUT now "ftp.bude.zapnute.o.$SERVERON.(momentalne.sa.nahrava.nejaky.program)
+$SHUTOFF";                                  # vytvor novy subor .etc.shutmsg  s aktualnym casom konca nahravky
+        SHUTMD5=`md5sum $SHUT`;
+    fi
+else                                        # ak sa este nic nenahrava 
+    $FTPSHUT now "ftp.bude.zapnute.o.$SERVERON.(momentalne.sa.nahrava.nejaky.program)
+$SHUTOFF";                                  # vyvor subor .etc.shutmsg
+    SHUTMD5=`md5sum $SHUT`;                 # zapamataj si jeho hash
+fi
+
+#vypnut linuxdcpp
+echo "Vypinam linuxdcpp..."
+killall linuxdcpp
 
 declare -a program
-program[1]="rtp://@233.10.47.90:1234"
-program[2]="rtp://@233.10.47.91:1234"
-program[3]="rtp://@233.10.47.70:1234"
-program[4]="rtp://@233.10.47.13:1234"
-program[5]="rtp://@233.10.47.11:1234"
-program[6]="rtp://@233.10.47.80:1234"
-program[7]="rtp://@233.10.47.66:1234"
-program[8]="rtp://@233.10.47.43:1234"
-program[9]="rtp://@233.10.47.82:1234"
-program[10]="rtp://@233.10.47.54:1234"
-program[11]="rtp://@233.11.36.92:1234"
-program[12]="rtp://@233.10.47.81:1234"
-program[13]="udp://@224.1.2.3:1234"
-program[14]="rtp://@224.10.20.30:1234"
-program[15]="rtp://@233.10.47.68:1234"
-program[16]="rtp://@233.10.47.84:1234"
-program[17]="rtp://@233.11.36.102:1234"
-program[18]="rtp://@233.10.47.22:1234"
+program[1]=233.10.47.90
+program[2]=233.10.47.91
+program[3]=233.10.47.70
+program[4]=233.10.47.13
+program[5]=233.10.47.11
+program[6]=233.10.47.80
+program[7]=233.10.47.66
+program[8]=233.10.47.43
+program[9]=233.10.47.82
+program[10]=233.10.47.54
+program[11]=233.11.36.92
+program[12]=233.10.47.81
+program[13]=224.1.2.3
+program[14]=224.10.20.30
+program[15]=233.10.47.68
+program[16]=233.10.47.84
+program[17]=233.11.36.102
 
 echo "$DATUM-$1"
 OUTPUTFILE="$OUT/$DATUM-$1.mpg"
 
+#ionice -c2 -n0 nice -n -20 vlc --udp-caching 20000 --intf dummy udp://@${program[$1]}:1234 \
+#    --sout '#duplicate{dst=standard{access=file,mux=ts,dst='$OUTPUTFILE'},dst=standard{access=udp{caching=20000},mux=ts,dst=192.168.0.4:1235} }' &
 
-vlc --udp-caching 20000 --intf dummy ${program[$1]} \
-    --sout '#duplicate{dst=standard{access=file,mux=ts,dst='$OUTPUTFILE'}}' &
+
+vlc --udp-caching 20000 --intf dummy rtp://@${program[$1]}:1234 \
+    --sout '#duplicate{dst=standard{access=file,mux=ps,dst='$OUTPUTFILE'}}' &
 
 sleep 2
 
 VLCPID=$!
-#$RENICE -20 -p $VLCPID
-#$IONICE -n0 -c1 -p $VLCPID
+$RENICE -20 -p $VLCPID
+$IONICE -n0 -c1 -p $VLCPID
 
 echo $VLCPID
 sleep $2'm'
 
 #skoncit nahravanie
 kill -HUP $VLCPID
+
+#zapnut ftp server
+POM=`md5sum $SHUT`                  # zisti aktualny hash suboru .etc.shutmsg
+if [ "$POM" = "$SHUTMD5" ]; then    # ak ho ziadna dalsia nahravka nezmenila potom
+    $FTPSHUT -R                      # zapni ftp
+fi
 
 exit 0
 
